@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?&targetServerType=master&ssl=false
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://rc1b-ffizwuhkmy64le96.mdb.yandexcloud.net:6432/solid-snake?&targetServerType=master&ssl=false
+    username: postgres-user
+    password: postgres
   jpa:
     show-sql: true
     hibernate:
