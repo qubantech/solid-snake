@@ -2,6 +2,7 @@ package tech.quban.solidsnake.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,8 @@ public class BalanceController {
 
     @PostMapping("/deposit/{balanceUuid}/{amount}")
     @Operation(summary = "Deposits money to specified balance.")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content)
-    ResponseEntity<?> depositBalance(@PathVariable String balanceUuid, @PathVariable long amount) {
+    @ApiResponse(responseCode = "200", description = "OK", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = Balance.class))})
+    ResponseEntity<Balance> depositBalance(@PathVariable String balanceUuid, @PathVariable long amount) {
         Balance balance = balanceRepository
                 .findById(balanceUuid)
                 .orElse(new Balance(balanceUuid, 0));
@@ -28,8 +29,8 @@ public class BalanceController {
 
     @GetMapping("/{balanceUuid}")
     @Operation(summary = "Returns user balance.")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content)
-    ResponseEntity<?> getBalance(@PathVariable String balanceUuid) {
+    @ApiResponse(responseCode = "200", description = "OK", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = Balance.class))})
+    ResponseEntity<Balance> getBalance(@PathVariable String balanceUuid) {
         Balance balance = balanceRepository
                 .findById(balanceUuid)
                 .orElse(new Balance(balanceUuid, 0));

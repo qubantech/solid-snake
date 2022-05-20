@@ -1,11 +1,14 @@
 package tech.quban.solidsnake.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tech.quban.solidsnake.dto.TransactionDto;
 import tech.quban.solidsnake.entity.Balance;
 import tech.quban.solidsnake.entity.Transaction;
 import tech.quban.solidsnake.exception.AlreadyExistsException;
@@ -16,6 +19,7 @@ import tech.quban.solidsnake.repository.BalanceRepository;
 import tech.quban.solidsnake.repository.TransactionRepository;
 
 import javax.transaction.Transactional;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,33 +31,23 @@ public class TransactionController {
 
     @GetMapping("/status/{transactionHash}")
     @Operation(summary = "Returns transaction by its hash.")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content)
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = TransactionDto.class)))
     @ApiResponse(responseCode = "404", description = "Transaction not found.", content = @Content)
     ResponseEntity<?> getTransactionStatusByHash(@PathVariable String transactionHash) {
-        Transaction transaction = transactionRepository
-                .findByHash(transactionHash)
-                .orElseThrow(NotFoundException::new);
+        Transaction transaction = transactionRepository.findByHash(transactionHash).orElseThrow(NotFoundException::new);
         return ResponseEntity.ok(transactionMapper.transactionToTransactionDto(transaction));
     }
 
     @PostMapping("/transfer/{senderUuid}/{receiverUuid}/{hash}/{amount}")
     @Transactional
     @Operation(summary = "Performs transaction.")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content)
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = TransactionDto.class)))
     @ApiResponse(responseCode = "404", description = "Receiver or sender not found.", content = @Content)
     @ApiResponse(responseCode = "406", description = "Transaction already exists.", content = @Content)
     @ApiResponse(responseCode = "409", description = "Not enough money.", content = @Content)
-    ResponseEntity<?> transfer(
-            @PathVariable String senderUuid,
-            @PathVariable String receiverUuid,
-            @PathVariable String hash,
-            @PathVariable long amount
-    ) {
-        Balance senderBalance = balanceRepository.findById(senderUuid)
-                .orElseThrow(NotFoundException::new);
-        Balance receiverBalance = balanceRepository.findById(receiverUuid)
-                .orElseThrow(NotFoundException::new);
-        ;
+    ResponseEntity<?> transfer(@PathVariable String senderUuid, @PathVariable String receiverUuid, @PathVariable String hash, @PathVariable long amount) {
+        Balance senderBalance = balanceRepository.findById(senderUuid).orElseThrow(NotFoundException::new);
+        Balance receiverBalance = balanceRepository.findById(receiverUuid).orElseThrow(NotFoundException::new);
 
         if (transactionRepository.findByHash(hash).isPresent()) {
             throw new AlreadyExistsException();
@@ -79,28 +73,17 @@ public class TransactionController {
 
     @GetMapping("/user/{userUuid}")
     @Operation(summary = "Returns user transactions.")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content)
+    @ApiResponse(responseCode = "200", description = "OK", content = {@Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = TransactionDto.class)))})
     ResponseEntity<?> getUserTransactions(@PathVariable String userUuid) {
-        Balance senderBalance = balanceRepository.findById(userUuid)
-                .orElse(new Balance(userUuid, 0));
-
-        return ResponseEntity.ok(
-                transactionMapper.transactionListToTransactionDtoList(
-                        transactionRepository.findAllBySender(senderBalance)
-                )
-        );
+        Balance senderBalance = balanceRepository.findById(userUuid).orElse(new Balance(userUuid, 0));
+        return ResponseEntity.ok(transactionMapper.transactionListToTransactionDtoList(transactionRepository.findAllBySender(senderBalance)));
     }
 
     @GetMapping("/seller/{sellerUuid}")
     @Operation(summary = "Returns seller transactions.")
-    @ApiResponse(responseCode = "200", description = "OK", content = @Content)
-    ResponseEntity<?> getSellerTransactions(@PathVariable String sellerUuid) {
-        Balance receiverBalance = balanceRepository.findById(sellerUuid)
-                .orElse(new Balance(sellerUuid, 0));
-        return ResponseEntity.ok(
-                transactionMapper.transactionListToTransactionDtoList(
-                        transactionRepository.findAllByReceiver(receiverBalance)
-                )
-        );
+    @ApiResponse(responseCode = "200", description = "OK", content = {@Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = TransactionDto.class)))})
+    ResponseEntity<List<TransactionDto>> getSellerTransactions(@PathVariable String sellerUuid) {
+        Balance receiverBalance = balanceRepository.findById(sellerUuid).orElse(new Balance(sellerUuid, 0));
+        return ResponseEntity.ok(transactionMapper.transactionListToTransactionDtoList(transactionRepository.findAllByReceiver(receiverBalance)));
     }
 }
